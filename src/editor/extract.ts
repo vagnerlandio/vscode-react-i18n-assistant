@@ -1,98 +1,98 @@
-import { Extract } from '../core/editor'
-import * as vscode from 'vscode'
-import { KeyDetector } from '../utils'
+import { Extract } from "../core/editor";
+import * as vscode from "vscode";
+import { KeyDetector } from "../utils";
 
 class ExtractProvider extends Extract {
   get activeText() {
-    const { document } = vscode.window.activeTextEditor
-    return document.getText()
+    const { document } = vscode.window.activeTextEditor;
+    return document.getText();
   }
 
   keyTransform(key): string {
-    return KeyDetector.normalizeKey(key, this.activeText)
+    return KeyDetector.normalizeKey(key, this.activeText);
   }
 
   defaultKeyTransform(defaultKey): string {
-    const [, ...resetKey] = defaultKey.split('.')
+    const [, ...resetKey] = defaultKey.split(".");
 
     if (!resetKey.length) {
-      return defaultKey
+      return defaultKey;
     }
 
-    const nsKey = this.getNSkey()
-    return nsKey ? `${nsKey}.${resetKey.join('.')}` : defaultKey
+    const nsKey = this.getNSkey();
+    return nsKey ? `${nsKey}.${resetKey.join(".")}` : defaultKey;
   }
 
   getNSkey() {
-    return KeyDetector.getNsByText(this.activeText)
+    return KeyDetector.getNsByText(this.activeText);
   }
 
   keyReplace(template) {
-    return key => {
-      const nsKey = this.getNSkey()
-      const [mainKey, ...restKey] = key.split('.')
-      let shownKey = null
+    return (key) => {
+      const nsKey = this.getNSkey();
+      const [mainKey, ...restKey] = key.split(".");
+      let shownKey = null;
 
       if (!restKey.length) {
-        return template.replace(/{key}/g, key)
+        return template.replace(/{key}/g, key);
       }
 
       if (nsKey === mainKey) {
-        shownKey = restKey.join('.')
+        shownKey = restKey.join(".");
       }
       shownKey =
-        nsKey === mainKey ? shownKey : `${mainKey}:${restKey.join('.')}`
+        nsKey === mainKey ? shownKey : `${mainKey}:${restKey.join(".")}`;
 
-      return template.replace(/{key}/g, shownKey)
-    }
+      return template.replace(/{key}/g, shownKey);
+    };
   }
 
   getCommands(params) {
-    const promptText = `请输入要保存的路径，例如:common:document.title`
+    const promptText = `Please enter the path to save, for example: common:document.title`;
 
     return [
       {
-        command: 'react-i18n.extract',
-        title: `提取为{t('key')}`,
+        command: "react-i18n-assistant.extract",
+        title: `Extract as {t('key')}`,
         arguments: [
           {
             ...params,
             promptText,
             keyTransform: this.keyTransform.bind(this),
             defaultKeyTransform: this.defaultKeyTransform.bind(this),
-            keyReplace: this.keyReplace(`{t('{key}')}`).bind(this)
-          }
-        ]
+            keyReplace: this.keyReplace(`{t('{key}')}`).bind(this),
+          },
+        ],
       },
       {
-        command: 'react-i18n.extract',
-        title: `提取为t('key')`,
+        command: "react-i18n-assistant.extract",
+        title: `Extract as t('key')`,
         arguments: [
           {
             ...params,
             promptText,
             keyTransform: this.keyTransform.bind(this),
             defaultKeyTransform: this.defaultKeyTransform.bind(this),
-            keyReplace: this.keyReplace(`t('{key}')`).bind(this)
-          }
-        ]
-      }
-    ]
+            keyReplace: this.keyReplace(`t('{key}')`).bind(this),
+          },
+        ],
+      },
+    ];
   }
 }
 
 export const extractEditor = () => {
   return vscode.languages.registerCodeActionsProvider(
     [
-      { language: 'react', scheme: '*' },
-      { language: 'javascriptreact', scheme: '*' },
-      { language: 'typescriptreact', scheme: '*' },
-      { language: 'javascript', scheme: '*' },
-      { language: 'typescript', scheme: '*' }
+      { language: "react", scheme: "*" },
+      { language: "javascriptreact", scheme: "*" },
+      { language: "typescriptreact", scheme: "*" },
+      { language: "javascript", scheme: "*" },
+      { language: "typescript", scheme: "*" },
     ],
     new ExtractProvider(),
     {
-      providedCodeActionKinds: [vscode.CodeActionKind.Refactor]
+      providedCodeActionKinds: [vscode.CodeActionKind.Refactor],
     }
-  )
-}
+  );
+};

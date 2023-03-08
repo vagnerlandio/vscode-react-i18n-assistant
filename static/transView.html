@@ -156,11 +156,14 @@
         <h2>
           <span>🔖 {{ shortFileName }}</span>
           <button @click="batchTrans()">
-            {{working ? '翻译中' : `批量根据${sourceLocale}翻译` }}
+            {{working ? 'Translating...' : `Batch translate by ${sourceLocale}`
+            }}
           </button>
         </h2>
-        <small v-if="initd">当前文件共有{{ keyTotal }}条文案</small>
-        <small v-else>正在分析..</small>
+        <small v-if="initd"
+          >This file has {{ keyTotal }} translation keys</small
+        >
+        <small v-else>Analysing...</small>
       </div>
 
       <ul class="i18n-table">
@@ -168,15 +171,14 @@
           <h4>
             <span>{{ `#${index+1} ${key}` }}</span>
             <button @click="trans(key, transItem)" :disabled="loadingMap[key]">
-              {{loadingMap[key] ? `翻译中..` : `根据${sourceLocale}翻译`}}
+              {{loadingMap[key] ? `Translating...` : `Translate by
+              ${sourceLocale}`}}
             </button>
           </h4>
 
           <ul>
             <li v-for="i18nItem in transItem" :key="transItem.lng">
-              <span
-                class="lng"
-                :class="{active: i18nItem.lng === sourceLocale}"
+              <span class="lng" :class="{active: i18nItem.lng === sourceLocale}"
                 >{{ i18nItem.lng }}</span
               >
               <input
@@ -193,89 +195,89 @@
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.5.17/dist/vue.min.js"></script>
     <script>
-      const vscode = acquireVsCodeApi()
+      const vscode = acquireVsCodeApi();
 
       const EVENT_TYPE = {
         READY: 0,
         ALL_TRANS: 1,
         TRANS: 2,
-        WRITE_FILE: 3
-      }
+        WRITE_FILE: 3,
+      };
 
       window.app = new Vue({
-        el: '#app',
+        el: "#app",
         data() {
           return {
             initd: false,
-            shortFileName: '',
+            shortFileName: "",
             allTrans: {},
             loadingMap: {},
             transTasks: [],
             emitTransTimer: null,
-            sourceLocale: 'zh-CN'
-          }
+            sourceLocale: "zh-CN",
+          };
         },
         computed: {
           keyTotal() {
-            return Object.keys(this.allTrans).length
+            return Object.keys(this.allTrans).length;
           },
           working() {
-            return Object.values(this.loadingMap).find(Boolean)
-          }
+            return Object.values(this.loadingMap).find(Boolean);
+          },
         },
         created() {
-          window.addEventListener('message', ({ data: eventData }) => {
-            this.initd = true
+          window.addEventListener("message", ({ data: eventData }) => {
+            this.initd = true;
 
-            const { data, type } = eventData
+            const { data, type } = eventData;
             switch (type) {
               case EVENT_TYPE.ALL_TRANS:
-                this.shortFileName = data.shortFileName
-                this.sourceLocale = data.sourceLocale
-                this.allTrans = data.allTrans
-                break
+                this.shortFileName = data.shortFileName;
+                this.sourceLocale = data.sourceLocale;
+                this.allTrans = data.allTrans;
+                break;
 
               case EVENT_TYPE.TRANS:
-                const { key, trans } = data
-                this.$set(this.allTrans, key, trans)
-                this.$delete(this.loadingMap, key)
-                break
+                const { key, trans } = data;
+                this.$set(this.allTrans, key, trans);
+                this.$delete(this.loadingMap, key);
+                break;
 
               default:
               //
             }
-          })
+          });
 
-          vscode.postMessage({ type: EVENT_TYPE.READY })
+          vscode.postMessage({ type: EVENT_TYPE.READY });
         },
         methods: {
           batchTrans() {
             Object.entries(this.allTrans).forEach(([key, transItem]) =>
               this.trans(key, transItem)
-            )
+            );
           },
           trans(key, transItem) {
             if (this.loadingMap[key]) {
-              return
+              return;
             }
 
-            this.$set(this.loadingMap, key, true)
+            this.$set(this.loadingMap, key, true);
             vscode.postMessage({
               type: EVENT_TYPE.TRANS,
               data: {
                 key,
-                trans: transItem
-              }
-            })
+                trans: transItem,
+              },
+            });
           },
           writeFile(i18nItem) {
             vscode.postMessage({
               type: EVENT_TYPE.WRITE_FILE,
-              data: [i18nItem]
-            })
-          }
-        }
-      })
+              data: [i18nItem],
+            });
+          },
+        },
+      });
     </script>
   </body>
 </html>
